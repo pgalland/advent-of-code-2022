@@ -1,9 +1,9 @@
 package exo7
 
 import java.nio.file.{Path, Paths}
-import scala.collection.mutable
-import scala.collection.BufferedIterator
-object Exo7 {
+import scala.collection.{BufferedIterator, mutable}
+
+object Exo7bis {
   def main(args: Array[String]): Unit = {
     val src = scala.io.Source.fromFile("src/main/scala/exo7/input.txt")
     try {
@@ -22,7 +22,7 @@ object Exo7 {
         .map(_.toSeq)
         .sliding(2, 2) // each group is "sequence of cd then ls" -> result of ls
 
-      val (_, directories) =
+      val (_, partialDirectories) =
         commandsAndLsResultPairs.foldLeft(Paths.get("/") -> Seq.empty[DirectoryPartial]) {
           case ((cwd, accDirs), Seq(commands, lsResult)) =>
             val newCwd = commands
@@ -44,18 +44,18 @@ object Exo7 {
             )
         }
 
-      val pathToDirectoryPartial = directories.map(dir => dir.path -> dir).toMap
-      val result = directories
-        .map(_.toDirectory(pathToDirectoryPartial))
-        .map(_.size)
-        .filter(size => size <= 100000)
-        .sum
-
+      val pathToDirectoryPartial = partialDirectories.map(dir => dir.path -> dir).toMap
+      val directories            = partialDirectories.map(_.toDirectory(pathToDirectoryPartial))
+      val totalSize              = directories.find(_.path.toString == "/").get.size
+      val freeSpace              = 70000000 - totalSize
+      val sizeNeeded             = 30000000 - freeSpace
+      val result                 = directories.map(_.size).filter(size => size >= sizeNeeded).min
       println(result)
     } finally {
       src.close()
     }
   }
+
   case class DirectoryPartial(
       path: Path,
       files: Seq[File],
