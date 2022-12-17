@@ -2,7 +2,7 @@ package exo16
 
 import scala.collection.mutable
 
-object Exo16 {
+object Exo16bis {
   def main(args: Array[String]): Unit = {
     val src = scala.io.Source.fromFile("src/main/scala/exo16/input.txt")
     try {
@@ -15,17 +15,32 @@ object Exo16 {
         .toMap
       val nonZeroRate = rates.filter(_._2 > 0).keySet
 
-      val result = nonZeroRate
-        .map(valve =>
-          maxRelease(
-            distances,
-            rates,
-            currentValve = valve,
-            leftToOpen = nonZeroRate,
-            timeLeft = 30 - distances("AA" -> valve)
+      val result = allSplits(nonZeroRate.toList).map { case (elephantValves, myValves) =>
+        elephantValves
+          .map(valve =>
+            maxRelease(
+              distances,
+              rates,
+              currentValve = valve,
+              leftToOpen = elephantValves.toSet,
+              timeLeft = 26 - distances("AA" -> valve)
+            )
           )
-        )
-        .max
+          .maxOption
+          .getOrElse(0) +
+          myValves
+            .map(valve =>
+              maxRelease(
+                distances,
+                rates,
+                currentValve = valve,
+                leftToOpen = myValves.toSet,
+                timeLeft = 26 - distances("AA" -> valve)
+              )
+            )
+            .maxOption
+            .getOrElse(0)
+      }.max
 
       println(result)
     } finally {
@@ -62,6 +77,7 @@ object Exo16 {
         }
         .maxOption
         .getOrElse(0)
+
     }
   }
 
@@ -79,6 +95,13 @@ object Exo16 {
 
     toVisit.find(_._1 == end).get._2
   }
+
+  def allSplits(valves: List[String]): Seq[(List[String], List[String])] = valves match
+    case Nil => Seq(Nil -> Nil)
+    case head :: tail =>
+      allSplits(tail).flatMap { case (left, right) =>
+        Seq((head :: left) -> right, left -> (head :: right))
+      }
 
   /** @return (valve, rate, tunnel destinations) */
   def parseLine(line: String): (String, Int, Seq[String]) = {
