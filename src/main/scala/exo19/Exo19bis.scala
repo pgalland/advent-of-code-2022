@@ -1,13 +1,11 @@
 package exo19
 
-import scala.collection.mutable
 import com.google.ortools.Loader
-import com.google.ortools.linearsolver.MPConstraint
-import com.google.ortools.linearsolver.MPObjective
-import com.google.ortools.linearsolver.MPSolver
-import com.google.ortools.linearsolver.MPVariable
+import com.google.ortools.linearsolver.{MPConstraint, MPObjective, MPSolver, MPVariable}
 
-object Exo19 {
+import scala.collection.mutable
+
+object Exo19bis {
 
   def main(args: Array[String]): Unit = {
     Loader.loadNativeLibraries()
@@ -15,9 +13,9 @@ object Exo19 {
     val src = scala.io.Source.fromFile("src/main/scala/exo19/input.txt")
     try {
       val lines      = src.getLines()
-      val blueprints = lines.map(parseLine).toSeq
+      val blueprints = lines.map(parseLine).toSeq.slice(0, 3)
 
-      val result = blueprints.map(blueprint => blueprint.number * solve(blueprint)).sum
+      val result = blueprints.map(solve).product
 
       println(result)
     } finally {
@@ -31,25 +29,25 @@ object Exo19 {
     val infinity = java.lang.Double.POSITIVE_INFINITY
     // Make the integer non-negative variables.
     // resources at beginning of turn n
-    val oreAtn      = (0 to 23).map(n => solver.makeIntVar(0.0, infinity, s"ore_at_$n"))
-    val clayAtn     = (0 to 23).map(n => solver.makeIntVar(0.0, infinity, s"clay_at_$n"))
-    val obsidianAtn = (0 to 23).map(n => solver.makeIntVar(0.0, infinity, s"obsidian_at_$n"))
-    val geodeAtn    = (0 to 24).map(n => solver.makeIntVar(0.0, infinity, s"geode_at_$n"))
+    val oreAtn      = (0 to 31).map(n => solver.makeIntVar(0.0, infinity, s"ore_at_$n"))
+    val clayAtn     = (0 to 31).map(n => solver.makeIntVar(0.0, infinity, s"clay_at_$n"))
+    val obsidianAtn = (0 to 31).map(n => solver.makeIntVar(0.0, infinity, s"obsidian_at_$n"))
+    val geodeAtn    = (0 to 32).map(n => solver.makeIntVar(0.0, infinity, s"geode_at_$n"))
     // nb robots built during turn n
     val buildOreRobotAtn =
-      (0 to 23).map(n => solver.makeIntVar(0.0, infinity, s"build_ore_robot_at_$n"))
+      (0 to 31).map(n => solver.makeIntVar(0.0, infinity, s"build_ore_robot_at_$n"))
     val buildClayRobotAtn =
-      (0 to 23).map(n => solver.makeIntVar(0.0, infinity, s"build_clay_robot_at_$n"))
+      (0 to 31).map(n => solver.makeIntVar(0.0, infinity, s"build_clay_robot_at_$n"))
     val buildObsidianRobotAtn =
-      (0 to 23).map(n => solver.makeIntVar(0.0, infinity, s"build_obsidian_robot_at_$n"))
+      (0 to 31).map(n => solver.makeIntVar(0.0, infinity, s"build_obsidian_robot_at_$n"))
     val buildGeodeRobotAtn =
-      (0 to 23).map(n => solver.makeIntVar(0.0, infinity, s"build_geode_robot_at_$n"))
+      (0 to 31).map(n => solver.makeIntVar(0.0, infinity, s"build_geode_robot_at_$n"))
 
     // Define the constraints
     // ore constraint
     val oreC0 = solver.makeConstraint(0, 0, s"ore_contraint_at_0")
     oreC0.setCoefficient(oreAtn(0), 1)
-    (1 to 23).foreach { n =>
+    (1 to 31).foreach { n =>
       val c = solver.makeConstraint(1, 1, s"ore_contraint_at_$n")
       c.setCoefficient(oreAtn(n), 1)
       c.setCoefficient(oreAtn(n - 1), -1)
@@ -64,7 +62,7 @@ object Exo19 {
     // clay constraint
     val clayC0 = solver.makeConstraint(0, 0, s"clay_contraint_at_0")
     clayC0.setCoefficient(clayAtn(0), 1)
-    (1 to 23).foreach { n =>
+    (1 to 31).foreach { n =>
       val c = solver.makeConstraint(0, 0, s"clay_contraint_at_$n")
       c.setCoefficient(clayAtn(n), 1)
       c.setCoefficient(clayAtn(n - 1), -1)
@@ -76,7 +74,7 @@ object Exo19 {
     // obsidian constraint
     val obsiC0 = solver.makeConstraint(0, 0, s"obsidian_contraint_at_0")
     obsiC0.setCoefficient(obsidianAtn(0), 1)
-    (1 to 23).foreach { n =>
+    (1 to 31).foreach { n =>
       val c = solver.makeConstraint(0, 0, s"obsidian_contraint_at_$n")
       c.setCoefficient(obsidianAtn(n), 1)
       c.setCoefficient(obsidianAtn(n - 1), -1)
@@ -88,7 +86,7 @@ object Exo19 {
     // geode constraint
     val geodeC0 = solver.makeConstraint(0, 0, s"geode_contraint_at_0")
     geodeC0.setCoefficient(geodeAtn(0), 1)
-    (1 to 24).foreach { n =>
+    (1 to 32).foreach { n =>
       val c = solver.makeConstraint(0, 0, s"geode_contraint_at_$n")
       c.setCoefficient(geodeAtn(n), 1)
       c.setCoefficient(geodeAtn(n - 1), -1)
@@ -96,7 +94,7 @@ object Exo19 {
       (0 until n - 1).foreach(i => c.setCoefficient(buildGeodeRobotAtn(i), -1))
     }
     // one robot per turn constraint
-    (0 to 23).foreach { n =>
+    (0 to 31).foreach { n =>
       val c = solver.makeConstraint(-infinity, 1, s"build_one_robot_per_turn_contraint_at_$n")
       // building the robots
       c.setCoefficient(buildOreRobotAtn(n), 1)
@@ -105,7 +103,7 @@ object Exo19 {
       c.setCoefficient(buildGeodeRobotAtn(n), 1)
     }
     // ore for building robot constraint
-    (0 to 23).foreach { n =>
+    (0 to 31).foreach { n =>
       val c = solver.makeConstraint(-infinity, 0, s"robot_build_ore_contraint_at_$n")
       // building the robots
       c.setCoefficient(buildOreRobotAtn(n), blueprint.oreRobotCost)
@@ -116,7 +114,7 @@ object Exo19 {
       c.setCoefficient(oreAtn(n), -1)
     }
     // clay for building robot constraint
-    (0 to 23).foreach { n =>
+    (0 to 31).foreach { n =>
       val c = solver.makeConstraint(-infinity, 0, s"robot_build_clay_contraint_at_$n")
       // building the robots
       c.setCoefficient(buildObsidianRobotAtn(n), blueprint.obsidianRobotCost.clay)
@@ -124,7 +122,7 @@ object Exo19 {
       c.setCoefficient(clayAtn(n), -1)
     }
     // obsidian for building robot constraint
-    (0 to 23).foreach { n =>
+    (0 to 31).foreach { n =>
       val c = solver.makeConstraint(-infinity, 0, s"robot_build_obsidian_contraint_at_$n")
       // building the robots
       c.setCoefficient(buildGeodeRobotAtn(n), blueprint.geodeRobotCost.obsidian)
@@ -133,7 +131,7 @@ object Exo19 {
     }
     // Define objective function
     val objective = solver.objective
-    objective.setCoefficient(geodeAtn(24), 1)
+    objective.setCoefficient(geodeAtn(32), 1)
     objective.setMaximization()
     // result
     solver.solve()
